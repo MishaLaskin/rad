@@ -1,0 +1,11 @@
+tmp/
+notebooks/
+__pycache__/
+.ipynb_checkpoints/
+scripts/run_*.sh
+test*
+*frame2state*
+cartpole-swingup-04-05-im84-b128-s23-pixel/
+cartpole-swingup-04-06-im84-b128-s23-pixel/
+walker-walk-04-06-im84-b128-s23-pixel/
+single_aug_040520.npy
