@@ -185,7 +185,6 @@ class ReplayBuffer(Dataset):
                 # skip crop and cutout augs
                 if 'crop' in aug or 'cutout' in aug:
                     continue
-                print('applying',aug,func)
                 obses = func(obses)
                 next_obses = func(next_obses)
 

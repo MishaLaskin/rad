@@ -74,7 +74,7 @@ def parse_args():
     parser.add_argument('--detach_encoder', default=False, action='store_true')
     # data augs
     parser.add_argument('--data_augs', default='crop', type=str)
-    parser.add_argument('--exp_name', default='walker_ablations_040520', type=str)
+    #parser.add_argument('--exp_name', default='walker_ablations_040520', type=str)
 
 
     parser.add_argument('--log_interval', default=100, type=int)
@@ -117,15 +117,14 @@ def evaluate(env, agent, video, num_episodes, L, step, args):
         L.log('eval/' + prefix + 'mean_episode_reward', mean_ep_reward, step)
         L.log('eval/' + prefix + 'best_episode_reward', best_ep_reward, step)
 
-        filename = args.work_dir + '/'  + exp_name + '/'+ args.domain_name + '-'+args.task_name + '-s' + str(args.seed) + '-eval_scores.npy'
-        key = args.data_augs
+        filename = args.work_dir + '/' + args.domain_name + '--'+args.task_name + '-' + args.data_augs + '--s' + str(args.seed) + '--eval_scores.npy'
+        key = args.domain_name + '-' + args.task_name + '-' + args.data_augs
         try:
             log_data = np.load(filename,allow_pickle=True)
             log_data = log_data.item()
         except:
             log_data = {}
             
-        
         if key not in log_data:
             log_data[key] = {}
 
@@ -134,6 +133,7 @@ def evaluate(env, agent, video, num_episodes, L, step, args):
         log_data[key][step]['mean_ep_reward'] = mean_ep_reward 
         log_data[key][step]['max_ep_reward'] = best_ep_reward 
         log_data[key][step]['std_ep_reward'] = std_ep_reward 
+        log_data[key][step]['env_step'] = step * args.action_repeat
 
         np.save(filename,log_data)
 

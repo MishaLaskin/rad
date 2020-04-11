@@ -1,4 +1,4 @@
-name: curl
+name: rad
 channels:
   - defaults
 dependencies:
