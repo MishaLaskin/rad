@@ -117,7 +117,7 @@ def evaluate(env, agent, video, num_episodes, L, step, args):
         L.log('eval/' + prefix + 'mean_episode_reward', mean_ep_reward, step)
         L.log('eval/' + prefix + 'best_episode_reward', best_ep_reward, step)
 
-        filename = args.exp_name + '.npy'
+        filename = args.work_dir + '/'  + exp_name + 'eval_scores.npy'
         key = args.data_augs
         try:
             log_data = np.load(filename,allow_pickle=True)
