@@ -206,7 +206,7 @@ def main():
     ts = time.gmtime() 
     ts = time.strftime("%m-%d", ts)    
     env_name = args.domain_name + '-' + args.task_name
-    exp_name = env_name + '-' + ts + '-im' + str(args.image_size) +'-b'  \
+    exp_name = env_name + '-im' + str(args.image_size) +'-b'  \
     + str(args.batch_size) + '-s' + str(args.seed)  + '-' + args.encoder_type
     args.work_dir = args.work_dir + '/'  + exp_name
 
@@ -258,8 +258,8 @@ def main():
         if step % args.eval_freq == 0:
             L.log('eval/episode', episode, step)
             evaluate(env, agent, video, args.num_eval_episodes, L, step,args)
-            if args.save_model:
-                agent.save_curl(model_dir, step)
+            if args.save_model and step % 100000 == 0:
+                agent.save(model_dir, step)
             if args.save_buffer:
                 replay_buffer.save(buffer_dir)
 
@@ -305,7 +305,9 @@ def main():
 
         obs = next_obs
         episode_step += 1
-
+        
+    if args.save_model:
+        agent.save(model_dir, 500000)
 
 if __name__ == '__main__':
     torch.multiprocessing.set_start_method('spawn')
