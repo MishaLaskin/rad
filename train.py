@@ -207,7 +207,7 @@ def main():
     ts = time.strftime("%m-%d", ts)    
     env_name = args.domain_name + '-' + args.task_name
     exp_name = env_name + '-im' + str(args.image_size) +'-b'  \
-    + str(args.batch_size) + '-s' + str(args.seed)  + '-' + args.encoder_type
+    + str(args.batch_size) + '-s' + str(args.seed)  + '-' + args.encoder_type + '-' + args.data_augs
     args.work_dir = args.work_dir + '/'  + exp_name
 
     utils.make_dir(args.work_dir)
@@ -251,13 +251,16 @@ def main():
 
     episode, episode_reward, done = 0, 0, True
     start_time = time.time()
-
+    
+    if args.save_model:
+        agent.save(model_dir, 0)
+        
     for step in range(args.num_train_steps):
         # evaluate agent periodically
 
         if step % args.eval_freq == 0:
             L.log('eval/episode', episode, step)
-            evaluate(env, agent, video, args.num_eval_episodes, L, step,args)
+            evaluate(env, agent, video, args.num_eval_episodes, L, step, args)
             if args.save_model and step % 100000 == 0:
                 agent.save(model_dir, step)
             if args.save_buffer:
