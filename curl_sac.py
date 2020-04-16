@@ -103,6 +103,47 @@ class Actor(nn.Module):
 
         return mu, pi, log_pi, log_std
 
+    def forward_with_attention(
+        self, obs, attention_index = 3, compute_pi=True, compute_log_pi=True, detach_encoder=False, 
+    ):
+        obs = self.encoder(obs, detach=detach_encoder)
+        
+        # get attention
+        attention = self.encoder.outputs['conv%d'%(attention_index)]
+        attention = torch.abs(attention[0]).mean(axis=0)
+        attention_dim = attention.shape[0]
+        attention = attention.reshape(-1)
+        attention = F.softmax(attention)
+        attention = attention.reshape(attention_dim, attention_dim)
+        
+        mu, log_std = self.trunk(obs).chunk(2, dim=-1)
+
+        # constrain log_std inside [log_std_min, log_std_max]
+        log_std = torch.tanh(log_std)
+        log_std = self.log_std_min + 0.5 * (
+            self.log_std_max - self.log_std_min
+        ) * (log_std + 1)
+
+        self.outputs['mu'] = mu
+        self.outputs['std'] = log_std.exp()
+
+        if compute_pi:
+            std = log_std.exp()
+            noise = torch.randn_like(mu)
+            pi = mu + noise * std
+        else:
+            pi = None
+            entropy = None
+
+        if compute_log_pi:
+            log_pi = gaussian_logprob(noise, log_std)
+        else:
+            log_pi = None
+
+        mu, pi, log_pi = squash(mu, pi, log_pi)
+
+        return mu, pi, log_pi, log_std, attention
+    
     def log(self, L, step, log_freq=LOG_FREQ):
         if step % log_freq != 0:
             return
@@ -372,7 +413,16 @@ class RadSacAgent(object):
                 obs, compute_pi=False, compute_log_pi=False
             )
             return mu.cpu().data.numpy().flatten()
-
+    
+    def select_action_with_attention(self, obs, att_index):
+        with torch.no_grad():
+            obs = torch.FloatTensor(obs).to(self.device)
+            obs = obs.unsqueeze(0)
+            mu, _, _, _, attention = self.actor.forward_with_attention(
+                obs, attention_index = att_index, compute_pi=False, compute_log_pi=False,
+            )
+            return mu.cpu().data.numpy().flatten(), attention.cpu().data.numpy()
+        
     def sample_action(self, obs):
         if obs.shape[-1] != self.image_size:
             obs = utils.center_crop_image(obs, self.image_size)
