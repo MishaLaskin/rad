@@ -22,8 +22,8 @@ import data_augs as rad
 def parse_args():
     parser = argparse.ArgumentParser()
     # environment
-    parser.add_argument('--domain_name', default='cheetah')
-    parser.add_argument('--task_name', default='run')
+    parser.add_argument('--domain_name', default='cartpole')
+    parser.add_argument('--task_name', default='swingup')
     parser.add_argument('--pre_transform_image_size', default=100, type=int)
 
     parser.add_argument('--image_size', default=84, type=int)
@@ -74,7 +74,6 @@ def parse_args():
     parser.add_argument('--detach_encoder', default=False, action='store_true')
     # data augs
     parser.add_argument('--data_augs', default='crop', type=str)
-    #parser.add_argument('--exp_name', default='walker_ablations_040520', type=str)
 
 
     parser.add_argument('--log_interval', default=100, type=int)
@@ -137,7 +136,6 @@ def evaluate(env, agent, video, num_episodes, L, step, args):
 
         np.save(filename,log_data)
 
-    #run_eval_loop(sample_stochastically=True)
     run_eval_loop(sample_stochastically=False)
     L.dump(step)
 
@@ -289,7 +287,7 @@ def main():
 
         # run training update
         if step >= args.init_steps:
-            num_updates = 1 #args.init_steps if step == args.init_steps else 1
+            num_updates = 1 
             for _ in range(num_updates):
                 agent.update(replay_buffer, L, step)
 
@@ -300,7 +298,6 @@ def main():
             done
         )
         episode_reward += reward
-        #action = np.array([action], dtype="float32") 
         replay_buffer.add(obs, action, reward, next_obs, done_bool)
 
         obs = next_obs

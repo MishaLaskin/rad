@@ -18,3 +18,4 @@ dependencies:
     - imageio-ffmpeg
     - torchvision
     - scikit-image
+    - tabulate

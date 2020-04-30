@@ -4,12 +4,6 @@ import torch
 import torch.nn as nn
 from TransformLayer import ColorJitterLayer
 
-"""
-All functions:
-- expect torch.tensor with device, float type, normalized to [0,1] range
-- return torch.tensor on same device and type as input
-"""
-
 
 def random_crop(imgs, out=84):
     """
@@ -265,7 +259,7 @@ if __name__ == '__main__':
 
     # crop
     t = now()
-    random_crop(x,64)
+    random_crop(x.cpu().numpy(),64)
     s1,tot1 = secs(t)
     # grayscale 
     t = now()
@@ -273,11 +267,11 @@ if __name__ == '__main__':
     s2,tot2 = secs(t)
     # normal cutout 
     t = now()
-    random_cutout(x,10,30)
+    random_cutout(x.cpu().numpy(),10,30)
     s3,tot3 = secs(t)
     # color cutout 
     t = now()
-    random_cutout_color(x,10,30)
+    random_cutout_color(x.cpu().numpy(),10,30)
     s4,tot4 = secs(t)
     # flip 
     t = now()
