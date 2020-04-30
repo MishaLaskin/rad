@@ -1,6 +1,14 @@
 # RAD: Reinforcement Learning with Augmented Data
 
-Official codebase for [RAD: Reinforcement Learning with Augmented Data](https://mishalaskin.github.io/rad). This codebase was originally forked from [CURL](https://mishalaskin.github.io/curl).
+Official codebase for [RAD: Reinforcement Learning with Augmented Data](https://mishalaskin.github.io/rad). This codebase was originally forked from [CURL](https://mishalaskin.github.io/curl). 
+
+## BibTex
+
+@unpublished{laskin_lee2020rad,
+  title={CURL: Contrastive Unsupervised Representations for Reinforcement Learning},
+  author={Laskin, Michael and Lee, Kimin and Stooke, Adam and Pinto, Lerrel and Abbeel, Pieter and Srinivas, Aravind},
+  note={arXiv}
+}
 
 ## Installation 
 
