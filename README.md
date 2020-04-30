@@ -1,6 +1,6 @@
 # RAD: Reinforcement Learning with Augmented Data
 
-Official codebase for [RAD paper](https://mishalaskin.github.io/rad). This codebase was originally forked from [CURL](https://mishalaskin.github.io/curl).
+Official codebase for [RAD: Reinforcement Learning with Augmented Data](https://mishalaskin.github.io/rad). This codebase was originally forked from [CURL](https://mishalaskin.github.io/curl).
 
 ## Installation 
 
