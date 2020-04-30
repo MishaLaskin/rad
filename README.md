@@ -28,7 +28,7 @@ CUDA_VISIBLE_DEVICES=0 python train.py \
 
 Augmentations can be specified through the `--data_augs` flag. This codebase supports the augmentations specified in `data_augs.py`. To chain multiple data augmentation simply separate the augmentation strings with a `-` string. For example to apply `crop -> rotate -> flip` you can do the following `--data_augs crop-rotate-flip`. 
 
-All data augmentations can be visualized in `All_Data_Augs.ipynb`.
+All data augmentations can be visualized in `All_Data_Augs.ipynb`. You can also test the efficiency of our modules by running `python data_aug.py`.
 
 
 ## Logging 
