@@ -24,7 +24,14 @@ CUDA_VISIBLE_DEVICES=0 python train.py \
     --seed 23 --critic_lr 1e-3 --actor_lr 1e-3 --eval_freq 10000 --batch_size 128 --num_train_steps 200000 &
 ```
 
+## Data Augmentations 
+
 Augmentations can be specified through the `--data_augs` flag. This codebase supports the augmentations specified in `data_augs.py`. To chain multiple data augmentation simply separate the augmentation strings with a `-` string. For example to apply `crop -> rotate -> flip` you can do the following `--data_augs crop-rotate-flip`. 
+
+All data augmentations can be visualized in `All_Data_Augs.ipynb`.
+
+
+## Logging 
 
 In your console, you should see printouts that look like this:
 
