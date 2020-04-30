@@ -1,4 +1,6 @@
-# CURL: Contrastive Unsupervised Representation Learning for Sample-Efficient Reinforcement Learning
+# RAD: Reinforcement Learning with Augmented Data
+
+Official codebase for [RAD paper](https://mishalaskin.github.io/rad). 
 
 ## Installation 
 
