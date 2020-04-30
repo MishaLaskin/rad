@@ -4,11 +4,13 @@ Official codebase for [RAD: Reinforcement Learning with Augmented Data](https://
 
 ## BibTex
 
+```
 @unpublished{laskin_lee2020rad,
   title={CURL: Contrastive Unsupervised Representations for Reinforcement Learning},
   author={Laskin, Michael and Lee, Kimin and Stooke, Adam and Pinto, Lerrel and Abbeel, Pieter and Srinivas, Aravind},
   note={arXiv}
 }
+```
 
 ## Installation 
 
