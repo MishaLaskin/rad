@@ -6,7 +6,7 @@ Official codebase for [Reinforcement Learning with Augmented Data](https://misha
 
 ```
 @unpublished{laskin_lee2020rad,
-  title={CURL: Contrastive Unsupervised Representations for Reinforcement Learning},
+  title={Reinforcement Learning with Augmented Data},
   author={Laskin, Michael and Lee, Kimin and Stooke, Adam and Pinto, Lerrel and Abbeel, Pieter and Srinivas, Aravind},
   note={arXiv:2004.14990}
 }
