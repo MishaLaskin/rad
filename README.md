@@ -2,6 +2,9 @@
 
 Official codebase for [Reinforcement Learning with Augmented Data](https://mishalaskin.github.io/rad). This codebase was originally forked from [CURL](https://mishalaskin.github.io/curl). 
 
+Additionally, here is the [codebase link for ProcGen experiments](https://github.com/pokaxpoka/rad_procgen).
+
+
 ## BibTex
 
 ```
