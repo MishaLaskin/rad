@@ -289,6 +289,7 @@ class RadSacAgent(object):
                 'rotate':rad.random_rotation,
                 'rand_conv':rad.random_convolution,
                 'color_jitter':rad.random_color_jitter,
+                'translate':rad.random_translate,
                 'no_aug':rad.no_aug,
             }
 
