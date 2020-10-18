@@ -69,11 +69,13 @@ def preprocess_obs(obs, bits=5):
 
 class ReplayBuffer(Dataset):
     """Buffer to store environment transitions."""
-    def __init__(self, obs_shape, action_shape, capacity, batch_size, device,image_size=84,transform=None):
+    def __init__(self, obs_shape, action_shape, capacity, batch_size, device,image_size=84, 
+                 pre_image_size=84, transform=None):
         self.capacity = capacity
         self.batch_size = batch_size
         self.device = device
         self.image_size = image_size
+        self.pre_image_size = pre_image_size # for translation
         self.transform = transform
         # the proprioceptive obs is stored as float32, pixels obs as uint8
         obs_dtype = np.float32 if len(obs_shape) == 1 else np.uint8
@@ -162,13 +164,17 @@ class ReplayBuffer(Dataset):
       
         obses = self.obses[idxs]
         next_obses = self.next_obses[idxs]
-
         if aug_funcs:
             for aug,func in aug_funcs.items():
                 # apply crop and cutout first
                 if 'crop' in aug or 'cutout' in aug:
                     obses = func(obses)
                     next_obses = func(next_obses)
+                elif 'translate' in aug: 
+                    og_obses = center_crop_images(obses, self.pre_image_size)
+                    og_next_obses = center_crop_images(next_obses, self.pre_image_size)
+                    obses, rndm_idxs = func(og_obses, self.image_size, return_random_idxs=True)
+                    next_obses = func(og_next_obses, self.image_size, **rndm_idxs)                     
 
         obses = torch.as_tensor(obses, device=self.device).float()
         next_obses = torch.as_tensor(next_obses, device=self.device).float()
@@ -183,7 +189,7 @@ class ReplayBuffer(Dataset):
         if aug_funcs:
             for aug,func in aug_funcs.items():
                 # skip crop and cutout augs
-                if 'crop' in aug or 'cutout' in aug:
+                if 'crop' in aug or 'cutout' in aug or 'translate' in aug:
                     continue
                 obses = func(obses)
                 next_obses = func(next_obses)
@@ -278,3 +284,24 @@ def center_crop_image(image, output_size):
 
     image = image[:, top:top + new_h, left:left + new_w]
     return image
+
+
+def center_crop_images(image, output_size):
+    h, w = image.shape[2:]
+    new_h, new_w = output_size, output_size
+
+    top = (h - new_h)//2
+    left = (w - new_w)//2
+
+    image = image[:, :, top:top + new_h, left:left + new_w]
+    return image
+
+
+def center_translate(image, size):
+    c, h, w = image.shape
+    assert size >= h and size >= w
+    outs = np.zeros((c, size, size), dtype=image.dtype)
+    h1 = (size - h) // 2
+    w1 = (size - w) // 2
+    outs[:, h1:h1 + h, w1:w1 + w] = image
+    return outs

@@ -96,6 +96,11 @@ def evaluate(env, agent, video, num_episodes, L, step, args):
                 # center crop image
                 if args.encoder_type == 'pixel' and 'crop' in args.data_augs:
                     obs = utils.center_crop_image(obs,args.image_size)
+                if args.encoder_type == 'pixel' and 'translate' in args.data_augs:
+                    # first crop the center with pre_image_size
+                    obs = utils.center_crop_image(obs, args.pre_transform_image_size)
+                    # then translate cropped to center
+                    obs = utils.center_translate(obs, args.image_size)
                 with utils.eval_mode(agent):
                     if sample_stochastically:
                         action = agent.sample_action(obs / 255.)
@@ -182,6 +187,7 @@ def main():
     utils.set_seed_everywhere(args.seed)
 
     pre_transform_image_size = args.pre_transform_image_size if 'crop' in args.data_augs else args.image_size
+    pre_image_size = args.pre_transform_image_size # record the pre transform image size for translation
 
     env = dmc2gym.make(
         domain_name=args.domain_name,
@@ -236,6 +242,7 @@ def main():
         batch_size=args.batch_size,
         device=device,
         image_size=args.image_size,
+        pre_image_size=pre_image_size,
     )
 
     agent = make_agent(
@@ -244,6 +251,7 @@ def main():
         args=args,
         device=device
     )
+
 
     L = Logger(args.work_dir, use_tb=args.save_tb)
 

@@ -236,6 +236,20 @@ def random_color_jitter(imgs):
     imgs = transform_module(imgs).view(b,c,h,w)
     return imgs
 
+
+def random_translate(imgs, size, return_random_idxs=False, h1s=None, w1s=None):
+    n, c, h, w = imgs.shape
+    assert size >= h and size >= w
+    outs = np.zeros((n, c, size, size), dtype=imgs.dtype)
+    h1s = np.random.randint(0, size - h + 1, n) if h1s is None else h1s
+    w1s = np.random.randint(0, size - w + 1, n) if w1s is None else w1s
+    for out, img, h1, w1 in zip(outs, imgs, h1s, w1s):
+        out[:, h1:h1 + h, w1:w1 + w] = img
+    if return_random_idxs:  # So can do the same to another set of imgs.
+        return outs, dict(h1s=h1s, w1s=w1s)
+    return outs
+
+
 def no_aug(x):
     return x
 
