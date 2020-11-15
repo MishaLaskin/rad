@@ -17,8 +17,10 @@ from video import VideoRecorder
 
 from curl_sac import RadSacAgent
 from torchvision import transforms
+from torchvision import utils as tvu
 import data_augs as rad
 
+## Training Section
 def parse_args():
     parser = argparse.ArgumentParser()
     # environment
@@ -64,6 +66,15 @@ def parse_args():
     parser.add_argument('--init_temperature', default=0.1, type=float)
     parser.add_argument('--alpha_lr', default=1e-4, type=float)
     parser.add_argument('--alpha_beta', default=0.5, type=float)
+    # testing
+    parser.add_argument('--testing', default=False, action='store_true')
+    parser.add_argument('--load_step', default=0, type=int)
+    parser.add_argument('--train_dir', default='', type=str)
+    parser.add_argument('--eval_steps', default=3, type=int)
+    parser.add_argument('--save_image', default=False, action='store_true')
+    parser.add_argument('--adversarial_iters', default=50, type=int)
+    parser.add_argument('--attack_prob', default=0.5, type=float)
+    parser.add_argument('--train_data_augs', default='no_aug', type=str)
     # misc
     parser.add_argument('--seed', default=1, type=int)
     parser.add_argument('--work_dir', default='.', type=str)
@@ -73,7 +84,7 @@ def parse_args():
     parser.add_argument('--save_model', default=False, action='store_true')
     parser.add_argument('--detach_encoder', default=False, action='store_true')
     # data augs
-    parser.add_argument('--data_augs', default='crop', type=str)
+    parser.add_argument('--data_augs', default='no_aug', type=str)
 
 
     parser.add_argument('--log_interval', default=100, type=int)
@@ -81,7 +92,7 @@ def parse_args():
     return args
 
 
-def evaluate(env, agent, video, num_episodes, L, step, args):
+def evaluate_val(env, agent, video, num_episodes, L, step, args):
     all_ep_rewards = []
 
     def run_eval_loop(sample_stochastically=True):
@@ -175,7 +186,6 @@ def make_agent(obs_shape, action_shape, args, device):
             detach_encoder=args.detach_encoder,
             latent_dim=args.latent_dim,
             data_augs=args.data_augs
-
         )
     else:
         assert 'agent is not supported: %s' % args.agent
@@ -188,7 +198,7 @@ def main():
 
     pre_transform_image_size = args.pre_transform_image_size if 'crop' in args.data_augs else args.image_size
     pre_image_size = args.pre_transform_image_size # record the pre transform image size for translation
-
+    
     env = dmc2gym.make(
         domain_name=args.domain_name,
         task_name=args.task_name,
@@ -207,11 +217,10 @@ def main():
         env = utils.FrameStack(env, k=args.frame_stack)
     
     # make directory
-    ts = time.gmtime() 
-    ts = time.strftime("%m-%d", ts)    
+    data_augs = args.train_data_augs if args.testing else args.data_augs
     env_name = args.domain_name + '-' + args.task_name
-    exp_name = env_name + '-' + ts + '-im' + str(args.image_size) +'-b'  \
-    + str(args.batch_size) + '-s' + str(args.seed)  + '-' + args.encoder_type
+    exp_name = env_name + '-im' + str(args.image_size) \
+    + '-s' + str(args.seed)  + '-' + data_augs
     args.work_dir = args.work_dir + '/'  + exp_name
 
     utils.make_dir(args.work_dir)
@@ -227,7 +236,7 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     action_shape = env.action_space.shape
-
+    
     if args.encoder_type == 'pixel':
         obs_shape = (3*args.frame_stack, args.image_size, args.image_size)
         pre_aug_obs_shape = (3*args.frame_stack,pre_transform_image_size,pre_transform_image_size)
@@ -258,14 +267,21 @@ def main():
     episode, episode_reward, done = 0, 0, True
     start_time = time.time()
 
+    if args.testing:
+      print('Testing model')
+      evaluate_test(env, agent, video, args.num_eval_episodes, L, args)
+      return
+
+
     for step in range(args.num_train_steps):
         # evaluate agent periodically
 
-        if step % args.eval_freq == 0:
+        if (step + 1) % args.eval_freq == 0:
             L.log('eval/episode', episode, step)
-            evaluate(env, agent, video, args.num_eval_episodes, L, step,args)
+            evaluate_val(env, agent, video, args.num_eval_episodes, L, step, args)
             if args.save_model:
-                agent.save_curl(model_dir, step)
+                agent.save_curl(model_dir, step + 1)
+                agent.save(model_dir, step + 1)
             if args.save_buffer:
                 replay_buffer.save(buffer_dir)
 
@@ -311,8 +327,114 @@ def main():
         obs = next_obs
         episode_step += 1
 
+# Testing Functions
+def adversarial_obs(agent, obs, iters):
+    obs_adv = torch.FloatTensor(obs.copy()).to(agent.device)
+    obs_adv = obs_adv.unsqueeze(0)
+    obs_adv = torch.autograd.Variable(obs_adv, requires_grad=True)
+    
+    learning_rate = 0.1
+    
+    for _ in range(iters):
+        obs_adv_grad = agent.actor_obs_grad(obs_adv)
+        obs_adv_grad = learning_rate * (obs_adv_grad / obs_adv_grad.norm())
+
+        obs_adv = torch.autograd.Variable(obs_adv, requires_grad=False)
+        obs_adv = obs_adv.add(obs_adv_grad).clamp(min=0.0, max=1.0)
+        obs_adv = torch.autograd.Variable(obs_adv, requires_grad=True)
+
+    return obs_adv.squeeze()
+
+def save_obs_as_image(obs, fname):
+    obs_img = torch.FloatTensor(obs).view(-1, 3, obs.shape[1], obs.shape[2])
+    tvu.save_image(obs_img, fname)
+
+def save_images(obs_list, step, args):
+    i = random.randint(0, len(obs_list) - 1)
+    
+    image_dir = utils.make_dir(os.path.join(args.work_dir, 'image'))
+
+    obs_img_name = 'obs_step_' + str(step) + '_' + str(args.attack_prob) + '.png'
+    obs_adv_img_name = 'obs_adv_step_' + str(step) + '_' + str(args.attack_prob) + '.png'
+
+    obs_path = os.path.join(image_dir, obs_img_name)
+    obs_adv_path = os.path.join(image_dir, obs_adv_img_name)
+
+    save_obs_as_image(obs_list[i][0], obs_path)
+    save_obs_as_image(obs_list[i][1], obs_adv_path)
+
+def evaluate_step(env, agent, video, args, num_episodes, L, step, all_ep_rewards):
+    start_time = time.time()
+    for i in range(num_episodes):
+        obs = env.reset()
+        video.init(enabled=(i == 0))
+        done = False
+        episode_reward = 0
+        obs_list = []
+        while not done:
+            obs = obs / 255.
+            with utils.eval_mode(agent):
+                if random.random() < args.attack_prob:
+                  obs_adv = adversarial_obs(agent, obs, args.adversarial_iters)
+                  action = agent.select_action(obs_adv)
+
+                  if args.save_image:
+                      obs_list.append((obs, obs_adv))
+                else:
+                  action = agent.select_action(obs)
+            
+            obs, reward, done, _ = env.step(action)
+            video.record(env)
+            episode_reward += reward
+        
+        if args.save_image and len(obs_list):
+            save_images(obs_list, step, args)
+        
+        video.save('%d.mp4' % step)
+        L.log('eval/' + 'episode_reward', episode_reward, step)
+        all_ep_rewards.append(episode_reward)
+
+    return time.time() - start_time
+    
+def evaluate_test(env, agent, video, num_episodes, L, args):
+    all_ep_rewards = []
+    model_dir = os.path.join(args.train_dir, 'model')
+    agent.load(model_dir, args.load_step)
+    
+    model_name = model_dir.split('/')[-2]
+    filename = args.work_dir + '/' + model_name + '--eval_scores.npy'
+    key = model_name
+    
+    for step in range(args.eval_steps):
+        end_time = evaluate_step(env, agent, video, args, num_episodes, L, step, all_ep_rewards)
+        
+        L.log('eval/' + 'eval_time', end_time , step)
+        mean_ep_reward = np.mean(all_ep_rewards)
+        best_ep_reward = np.max(all_ep_rewards)
+        std_ep_reward = np.std(all_ep_rewards)
+        L.log('eval/' + 'mean_episode_reward', mean_ep_reward, step)
+        L.log('eval/' + 'best_episode_reward', best_ep_reward, step)
+
+        try:
+            log_data = np.load(filename,allow_pickle=True)
+            log_data = log_data.item()
+        except:
+            log_data = {}
+            
+        if key not in log_data:
+            log_data[key] = {}
+
+        log_data[key][step] = {}
+        log_data[key][step]['step'] = step 
+        log_data[key][step]['mean_ep_reward'] = mean_ep_reward 
+        log_data[key][step]['max_ep_reward'] = best_ep_reward 
+        log_data[key][step]['std_ep_reward'] = std_ep_reward
+        log_data[key][step]['env_step'] = step * args.action_repeat
+
+        np.save(filename,log_data)
+        L.dump(step)
 
 if __name__ == '__main__':
     torch.multiprocessing.set_start_method('spawn')
-
     main()
+
