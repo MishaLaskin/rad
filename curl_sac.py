@@ -290,6 +290,10 @@ class RadSacAgent(object):
                 'rand_conv':rad.random_convolution,
                 'color_jitter':rad.random_color_jitter,
                 'translate':rad.random_translate,
+                'rgb_shift':rad.rgb_shift,
+                'channel_shuffle':rad.rgb_shuffle,
+                'median_blur':rad.median_blur,
+                'rand_inv':rad.img_invert,
                 'no_aug':rad.no_aug,
             }
 

@@ -2,7 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
+import random
+import random
+import random
 from TransformLayer import ColorJitterLayer
+from scipy import ndimage
 
 
 def random_crop(imgs, out=84):
@@ -188,8 +192,6 @@ def random_rotation(images,p=.3):
 
 # random color
 
-    
-
 def random_convolution(imgs):
     '''
     random covolution in "network randomization"
@@ -249,6 +251,69 @@ def random_translate(imgs, size, return_random_idxs=False, h1s=None, w1s=None):
         return outs, dict(h1s=h1s, w1s=w1s)
     return outs
 
+# RGB shift
+def rgb_shift(imgs):
+    """
+        args:
+        imgs: shape (B,C,H,W)
+        out: output size (e.g. 84)
+    """
+    red_shift = np.random.randint(-64, 64)
+    green_shift = np.random.randint(-64, 64)
+    blue_shift = np.random.randint(-64, 64)
+    n, c, h, w = imgs.shape
+    frames = c // 3
+    imgs_copy = imgs.clone()
+    imgs_copy = imgs_copy.view([n,frames,3,h,w])
+    imgs_copy[:, :, 0, ...] += red_shift
+    imgs_copy[:, :, 1, ...] += green_shift
+    imgs_copy[:, :, 2, ...] += blue_shift
+    imgs_copy = imgs_copy.reshape(n,-1,h,w)
+    return imgs_copy
+
+# Channel shuffle
+def rgb_shuffle(imgs):
+    n, c, h, w = imgs.shape
+    frames = c // 3
+    imgs_copy = imgs.clone()
+    imgs_copy = imgs_copy.view([n,frames,3,h,w])
+    red_frame = imgs_copy[:, :, 0, ...]
+    green_frame = imgs_copy[:, :, 1, ...]
+    blue_frame = imgs_copy[:, :, 2, ...]
+    imgs_copy[:, :, 0, ...] = green_frame
+    imgs_copy[:, :, 1, ...] = blue_frame
+    imgs_copy[:, :, 2, ...] = green_frame
+    imgs_copy = imgs_copy.reshape(n,-1,h,w)
+    return imgs_copy
+
+# Median Blur
+def median_blur(imgs):
+    n, c, h, w = imgs.shape
+    frames = c // 3
+    imgs_copy = imgs.copy()
+    imgs_copy = imgs_copy.reshape([n,frames,3,h,w])
+    for idx in range(n):
+        for frame in range(frames):
+            img_to_blur = imgs_copy[idx, frame, :, :, :]
+            imgs_copy[idx, frame, :, :, :] = ndimage.median_filter(img_to_blur, 3)
+    imgs_copy = imgs_copy.reshape(n,-1,h,w)
+    return imgs_copy
+
+# Image invert random
+def img_invert(imgs):
+    n, c, h, w = imgs.shape
+    frames = c // 3
+    imgs_invert = imgs.clone()
+    imgs_invert = imgs_invert.view([n,frames,3,h,w])
+    for idx in range(n):
+        for frame in range(frames):
+            rand = random.random()
+            if rand>0.5:
+                img_to_invert = imgs_invert[idx, frame, :, :, :]
+                imgs_invert[idx, frame, :, :, :] = 255-img_to_invert
+    imgs_invert = imgs_invert.reshape(n,-1,h,w)
+    return imgs_invert
+
 
 def no_aug(x):
     return x
@@ -267,7 +332,7 @@ if __name__ == '__main__':
     x = np.load('data_sample.npy',allow_pickle=True)
     x = np.concatenate([x,x,x],1)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+    x_numpy = x.copy()
     x = torch.from_numpy(x).to(device)
     x = x.float() / 255.
 
@@ -303,7 +368,23 @@ if __name__ == '__main__':
     t = now()
     random_color_jitter(x)
     s8,tot8 = secs(t)
-    
+    # rgb shift
+    t = now()
+    rgb_shift(x)
+    s9, tot9 = secs(t)
+    # channel shuffle
+    t = now()
+    rgb_shuffle(x)
+    s10, tot10 = secs(t)
+    # Median blur
+    t = now()
+    median_blur(x_numpy)
+    s11, tot11 = secs(t)
+    # rand inversion
+    t = now()
+    img_invert(x)
+    s12, tot12 = secs(t)
+
     print(tabulate([['Crop', s1,tot1], 
                     ['Grayscale', s2,tot2], 
                     ['Normal Cutout', s3,tot3], 
@@ -311,6 +392,11 @@ if __name__ == '__main__':
                     ['Flip', s5,tot5], 
                     ['Rotate', s6,tot6], 
                     ['Rand Conv', s7,tot7], 
-                    ['Color Jitter', s8,tot8]], 
+                    ['Color Jitter', s8,tot8],
+                    ['RGB Shift', s9, tot9],
+                    ['Channel Shuffle', s10, tot10],
+                    ['Median Blur', s11, tot11],
+                    ['Random Inversion', s12, tot12],
+                    ],
                     headers=['Data Aug', 'Time / batch (secs)', 'Time / 100k steps (mins)']))
 
