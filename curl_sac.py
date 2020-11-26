@@ -74,9 +74,9 @@ class Actor(nn.Module):
         self, obs, compute_pi=True, compute_log_pi=True, detach_encoder=False
     ):
         obs = self.encoder(obs, detach=detach_encoder)
-        
+
         mu, log_std = self.trunk(obs).chunk(2, dim=-1)
-        
+
         # constrain log_std inside [log_std_min, log_std_max]
         log_std = torch.tanh(log_std)
         log_std = self.log_std_min + 0.5 * (
@@ -100,7 +100,7 @@ class Actor(nn.Module):
             log_pi = None
 
         mu, pi, log_pi = squash(mu, pi, log_pi)
-        
+
         return mu, pi, log_pi, log_std
 
     def log(self, L, step, log_freq=LOG_FREQ):
@@ -263,7 +263,6 @@ class RadSacAgent(object):
         detach_encoder=False,
         latent_dim=128,
         data_augs = '',
-        training=True,
     ):
         self.device = device
         self.discount = discount
@@ -352,7 +351,7 @@ class RadSacAgent(object):
             )
         self.cross_entropy_loss = nn.CrossEntropyLoss()
 
-        self.train(training)
+        self.train()
         self.critic_target.train()
 
     def train(self, training=True):
