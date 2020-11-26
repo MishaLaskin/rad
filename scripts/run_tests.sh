@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=0 python train.py \
+CUDA_VISIBLE_DEVICES=0 python adversarial_test.py \
     --domain_name cartpole \
     --task_name swingup \
     --encoder_type pixel --work_dir ./test \

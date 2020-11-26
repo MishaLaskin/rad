@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=0 python train_test_lstm.py \
+CUDA_VISIBLE_DEVICES=0 python train_lstm.py \
     --domain_name cartpole \
     --task_name swingup \
     --encoder_type pixel --work_dir ./test \
