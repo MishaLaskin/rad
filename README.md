@@ -3,7 +3,7 @@
 ---
 **NOTE**
 
-The instructions for running code for the original Data Augmentations paper is given below. For instructions related to the CS 7643 Fall 2020 Final Project, please find the header "CS 7643 Fall 2020 Final Project" below.
+The instructions for running code for the original Data Augmentations paper is given below. For instructions related to the CS 7643 Fall 2020 Final Project, please find the header [CS 7643 Fall 2020 Final Project](#cs-7643-fall-2020-project-reproducibility-instructions) below.
 
 ---
 
@@ -83,7 +83,7 @@ tensorboard --logdir log --port 6006
 
 and go to `localhost:6006` in your browser. If you're running headlessly, try port forwarding with ssh.
 
-# CS 7643 Project Reproducibility Instructions
+# CS 7643 Fall 2020 Project Reproducibility Instructions
 
 ## Shashwat Instructions (Add Title)
 
