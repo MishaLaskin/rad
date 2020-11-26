@@ -1,5 +1,6 @@
 tmp/**
 scripts/run.sh
+scripts/run_batch_tests.sh
 __pycache__/
 .ipynb_checkpoints/
 test/**

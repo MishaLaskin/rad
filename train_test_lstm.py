@@ -11,11 +11,11 @@ import json
 import dmc2gym
 import copy
 
-import utils
+import utils_lstm as utils
 from logger import Logger
 from video import VideoRecorder
 
-from curl_sac import RadSacAgent
+from curl_sac_lstm import RadSacAgent
 from torchvision import transforms
 from torchvision import utils as tvu
 import data_augs as rad
@@ -32,15 +32,15 @@ def parse_args():
     parser.add_argument('--action_repeat', default=1, type=int)
     parser.add_argument('--frame_stack', default=3, type=int)
     # replay buffer
-    parser.add_argument('--replay_buffer_capacity', default=100000, type=int)
+    parser.add_argument('--replay_buffer_capacity', default=800, type=int)
     # train
     parser.add_argument('--agent', default='rad_sac', type=str)
-    parser.add_argument('--init_steps', default=1000, type=int)
+    parser.add_argument('--init_steps', default=10, type=int)
     parser.add_argument('--num_train_steps', default=1000000, type=int)
     parser.add_argument('--batch_size', default=32, type=int)
     parser.add_argument('--hidden_dim', default=1024, type=int)
     # eval
-    parser.add_argument('--eval_freq', default=1000, type=int)
+    parser.add_argument('--eval_freq', default=10, type=int)
     parser.add_argument('--num_eval_episodes', default=10, type=int)
     # critic
     parser.add_argument('--critic_lr', default=1e-3, type=float)
@@ -72,9 +72,13 @@ def parse_args():
     parser.add_argument('--train_dir', default='', type=str)
     parser.add_argument('--eval_steps', default=3, type=int)
     parser.add_argument('--save_image', default=False, action='store_true')
-    parser.add_argument('--adversarial_iters', default=50, type=int)
+    parser.add_argument('--adversarial_iters', default=10, type=int)
     parser.add_argument('--attack_prob', default=0.5, type=float)
     parser.add_argument('--train_data_augs', default='no_aug', type=str)
+    # LSTM
+    parser.add_argument('--lstm_num_layers', default=1, type=int)
+    parser.add_argument('--lstm_dropout', default=0.0, type=float)
+    parser.add_argument('--lstm_lookback', default=5, type=int)
     # misc
     parser.add_argument('--seed', default=1, type=int)
     parser.add_argument('--work_dir', default='.', type=str)
@@ -87,7 +91,7 @@ def parse_args():
     parser.add_argument('--data_augs', default='no_aug', type=str)
 
 
-    parser.add_argument('--log_interval', default=100, type=int)
+    parser.add_argument('--log_interval', default=5, type=int)
     args = parser.parse_args()
     return args
 
@@ -103,6 +107,8 @@ def evaluate_val(env, agent, video, num_episodes, L, step, args):
             video.init(enabled=(i == 0))
             done = False
             episode_reward = 0
+            
+            obses = obs[None,:]
             while not done:
                 # center crop image
                 if args.encoder_type == 'pixel' and 'crop' in args.data_augs:
@@ -114,10 +120,11 @@ def evaluate_val(env, agent, video, num_episodes, L, step, args):
                     obs = utils.center_translate(obs, args.image_size)
                 with utils.eval_mode(agent):
                     if sample_stochastically:
-                        action = agent.sample_action(obs / 255.)
+                        action = agent.sample_action(obses[None,:] / 255.)
                     else:
-                        action = agent.select_action(obs / 255.)
+                        action = agent.select_action(obses[None,:] / 255.)
                 obs, reward, done, _ = env.step(action)
+                obses = np.concatenate((obses, obs[None,:]))
                 video.record(env)
                 episode_reward += reward
 
@@ -185,7 +192,9 @@ def make_agent(obs_shape, action_shape, args, device):
             log_interval=args.log_interval,
             detach_encoder=args.detach_encoder,
             latent_dim=args.latent_dim,
-            data_augs=args.data_augs
+            data_augs=args.data_augs,
+            lstm_num_layers=args.lstm_num_layers,
+            lstm_dropout=args.lstm_dropout
         )
     else:
         assert 'agent is not supported: %s' % args.agent
@@ -220,7 +229,7 @@ def main():
     data_augs = args.train_data_augs if args.testing else args.data_augs
     env_name = args.domain_name + '-' + args.task_name
     exp_name = env_name + '-im' + str(args.image_size) \
-    + '-s' + str(args.seed)  + '-' + data_augs
+    + '-s' + str(args.seed)  + '-' + data_augs + '-lstm'
     args.work_dir = args.work_dir + '/'  + exp_name
 
     utils.make_dir(args.work_dir)
@@ -245,6 +254,7 @@ def main():
         pre_aug_obs_shape = obs_shape
 
     replay_buffer = utils.ReplayBuffer(
+        obs_len = args.lstm_lookback,
         obs_shape=pre_aug_obs_shape,
         action_shape=action_shape,
         capacity=args.replay_buffer_capacity,
@@ -272,10 +282,8 @@ def main():
       evaluate_test(env, agent, video, args.num_eval_episodes, L, args)
       return
 
-
     for step in range(args.num_train_steps):
         # evaluate agent periodically
-
         if (step + 1) % args.eval_freq == 0:
             L.log('eval/episode', episode, step)
             evaluate_val(env, agent, video, args.num_eval_episodes, L, step, args)
@@ -284,7 +292,7 @@ def main():
                 agent.save(model_dir, step + 1)
             if args.save_buffer:
                 replay_buffer.save(buffer_dir)
-
+        
         if done:
             if step > 0:
                 if step % args.log_interval == 0:
@@ -301,42 +309,49 @@ def main():
             episode += 1
             if step % args.log_interval == 0:
                 L.log('train/episode', episode, step)
-
+        
+        obses = obs[None,:]
+        actions = np.empty((0,1))
+        lstm_step = 0
         # sample action for data collection
-        if step < args.init_steps:
-            action = env.action_space.sample()
-        else:
-            with utils.eval_mode(agent):
-                action = agent.sample_action(obs / 255.)
+        while lstm_step < args.lstm_lookback:
+            if step < args.init_steps:
+                action = env.action_space.sample()
+            else:
+                with utils.eval_mode(agent):
+                    action = agent.sample_action(obses[None,:] / 255.)
 
+            next_obs, reward, done, _ = env.step(action)
+            obses = np.concatenate((obses, next_obs[None,:]))
+            actions = np.concatenate((actions, action[None,:]))
+            
+            episode_reward += reward
+            episode_step += 1
+            lstm_step += 1
+        
         # run training update
         if step >= args.init_steps:
-            num_updates = 1 
-            for _ in range(num_updates):
-                agent.update(replay_buffer, L, step)
-
-        next_obs, reward, done, _ = env.step(action)
+            agent.update(replay_buffer, L, step)
 
         # allow infinit bootstrap
         done_bool = 0 if episode_step + 1 == env._max_episode_steps else float(
             done
         )
-        episode_reward += reward
-        replay_buffer.add(obs, action, reward, next_obs, done_bool)
 
-        obs = next_obs
-        episode_step += 1
+        replay_buffer.add(obses[:-1], actions, reward, obs[-1], done_bool)
 
 # Testing Functions
-def adversarial_obs(agent, obs, iters):
-    obs_adv = torch.FloatTensor(obs.copy()).to(agent.device)
-    obs_adv = obs_adv.unsqueeze(0)
-    obs_adv = torch.autograd.Variable(obs_adv, requires_grad=True)
+def adversarial_obs(agent, obses, actions, iters):
+    obses_adv = torch.FloatTensor(obses.copy()).to(agent.device)
+    obses_adv = obses_adv[None, :]
+    obses_adv = torch.autograd.Variable(obses_adv, requires_grad=True)
     
-    learning_rate = 1
-    
-    for _ in range(iters):
-        obs_adv_grad = agent.actor_obs_grad(obs_adv)
+    actions_adv = torch.FloatTensor(actions.copy()).to(agent.device)
+    actions_adv = actions_adv[None, :]
+
+    learning_rate = 0.1
+    for i in range(iters):
+        obs_adv_grad = agent.actor_obs_grad(obses_adv, actions_adv)
         obs_adv_grad[torch.isnan(obs_adv_grad)] = 0.0
         
         if obs_adv_grad.norm().item() == 0.0:
@@ -344,11 +359,11 @@ def adversarial_obs(agent, obs, iters):
         
         obs_adv_grad = learning_rate * (obs_adv_grad / obs_adv_grad.norm())
 
-        obs_adv = torch.autograd.Variable(obs_adv, requires_grad=False)
-        obs_adv = obs_adv.add(obs_adv_grad).clamp(min=0.0, max=1.0)
-        obs_adv = torch.autograd.Variable(obs_adv, requires_grad=True)
-    
-    return obs_adv.squeeze()
+        obses_adv = torch.autograd.Variable(obses_adv, requires_grad=False)
+        obses_adv = obses_adv.add(obs_adv_grad).clamp(min=0.0, max=1.0)
+        obses_adv = torch.autograd.Variable(obses_adv, requires_grad=True)
+
+    return obses_adv
 
 def save_obs_as_image(obs, fname):
     obs_img = torch.FloatTensor(obs).view(-1, 3, obs.shape[1], obs.shape[2])
@@ -375,25 +390,30 @@ def evaluate_step(env, agent, video, args, num_episodes, L, step, all_ep_rewards
         video.init(enabled=(i == 0))
         done = False
         episode_reward = 0
-        obs_list = []
+        
+        obses = obs[None,:] / 255.
+        actions = np.empty((0,1))
+        
+        first_iter = True
         while not done:
-            obs = obs / 255.
             with utils.eval_mode(agent):
-                if random.random() < args.attack_prob:
-                  obs_adv = adversarial_obs(agent, obs, args.adversarial_iters)
-                  action = agent.select_action(obs_adv)
-
-                  if args.save_image:
-                      obs_list.append((obs, obs_adv))
+                if not(first_iter) and random.random() < args.attack_prob:
+                    obses_adv = adversarial_obs(agent, obses, actions, args.adversarial_iters)
+                    action = agent.select_action(obses_adv)
                 else:
-                  action = agent.select_action(obs)
+                    action = agent.select_action(obses[None,:])
+                    first_iter = False
             
             obs, reward, done, _ = env.step(action)
+            if obses.shape[0] == args.lstm_lookback:
+                obses = np.concatenate((obses[1:], obs[None,:] / 255.))
+                actions = np.concatenate((actions[1:], action[None,:]))
+            else:
+                obses = np.concatenate((obses, obs[None,:] / 255.))
+                actions = np.concatenate((actions, action[None,:]))
+
             video.record(env)
             episode_reward += reward
-        
-        if args.save_image and len(obs_list):
-            save_images(obs_list, step, args)
         
         video.save('%d.mp4' % step)
         L.log('eval/' + 'episode_reward', episode_reward, step)
