@@ -101,5 +101,7 @@ Once you have saved the model, you can open 'scripts/run_tests.sh'. The script c
 * '--eval_steps' - This variable denotes the number of evaluation steps to run. An evaluation step consists of some number of episodes.
 * '--num_eval_episodes' - This variable tells us how many episodes should run per step.
 * '--attack_prob' - This variable denotes the adversarial attack probability. The observation is modified to an adversarial one at a rate approximately equivalent to this probability.
+* '--adversarial_iters' - This variable denotes the number of iterations that the adversarial gradient ascent on the observations runs for. The number used for the project was 10.
+* '--train_dir' - This variable should point to the top level model directory inside 'tmp'. This should be created during training.
 
-The above variables are already set per the original project parameters. They can be left alone and the script can be directly called to replicate the project.
+The above variables are already set per the original project parameters. They can be left alone and the script can be directly called to replicate the project. The only ones you may need to modify are 'train_dir' and 'work_dir'.
