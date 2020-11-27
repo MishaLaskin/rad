@@ -93,7 +93,7 @@ and go to `localhost:6006` in your browser. If you're running headlessly, try po
 This step assumes that you have a trained model, ready to run. It assumes that you've saved both the actor and critic. One can do this by running the training as instructed in the main instructions at the top and setting the save_model flag and choosing the eval_freq. The models for the project were trained for 30,000 steps, saving every 5000 steps. We used seed 23 on the cartpole swingup task training the RadSac agent.
 
 Once you have saved the model, you can open 'scripts/run_tests.sh'. The script calls the 'adversarial_obs.py' file. There are a number of flags that can be modified. You'll want to specify the following:
-* '--domain_name' - This variable sets the game that is played. It is currently set to cartpole, which is what the tests for the project were conducted on.
+* '--domain_name' - This variable sets the game that is played. It is currently set to 'cartpole', which is what the tests for the project were conducted on.
 * '--task_name' - This variable sets the task. Again, our project tests ran on 'swingup'.
 * '--work_dir' - It is specified as './test'. This can be changed, but you must create the folder that is specified here (including 'test').
 * '--seed' - This is the seed that the projects were tested on is 54.
@@ -105,3 +105,18 @@ Once you have saved the model, you can open 'scripts/run_tests.sh'. The script c
 * '--train_dir' - This variable should point to the top level model directory inside 'tmp'. This should be created during training.
 
 The above variables are already set per the original project parameters. They can be left alone and the script can be directly called to replicate the project. The only ones you may need to modify are 'train_dir' and 'work_dir'.
+
+## Training the LSTM and Running the LSTM against Adversarial Observations
+First, we go over training the LSTM. You should call 'scripts/run_lstm.sh' to train the LSTM. This file calls 'train_lstm.py' with some parameters. Again, the script can be directly called as it is, to replicate the project. We walk through some of the parameters to give the reader familiarity.
+
+* '--domain_name' - As above, we run on the 'cartpole' domain.
+* '--task_name' - As above, we run on the 'swingup' task.
+* '--work_dir' - In this case, since we are training a model, we give the 'tmp' directory. This is in line with the main repo. All models are stored in './tmp'.
+* '--data_augs' - We pass in 'no_augs'. The LSTM for the project was trained on no data augmentations.
+* '--seed' - The seed we set for LSTM training was 94.
+* '--critic_lr/--actor_lr' - The learning rate for both (after much hyperparameter tuning) was set to 1.5e-5, which was found to produce a good training regime.
+* '--eval_freq' - In this case, we saved and evaluated our model every 100 steps.
+* '--num_train_steps' - We only run our model to 1500 steps, since the LSTM is heavier to train.
+* '--lstm_num_layers' - The number of layers in the LSTM was set as 1.
+* '--lstm_dropout' - The dropout rate for the LSTM, which was irrelevant since the number of layers was 1.
+* '--lstm_lookback' - This is the number of episodes that the LSTM looks back when training. The LSTM only looks back to a maximum of 5 episodes.
