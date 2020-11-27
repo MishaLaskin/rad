@@ -106,7 +106,7 @@ Once you have saved the model, you can open 'scripts/run_tests.sh'. The script c
 
 The above variables are already set per the original project parameters. They can be left alone and the script can be directly called to replicate the project. The only ones you may need to modify are 'train_dir' and 'work_dir'.
 
-## Training the LSTM and Running the LSTM against Adversarial Observations
+## Training the LSTM on the Cartpole Swingup Task
 First, we go over training the LSTM. You should call 'scripts/run_lstm.sh' to train the LSTM. This file calls 'train_lstm.py' with some parameters. Again, the script can be directly called as it is, to replicate the project. We walk through some of the parameters to give the reader familiarity.
 
 * '--domain_name' - As above, we run on the 'cartpole' domain.
@@ -120,3 +120,8 @@ First, we go over training the LSTM. You should call 'scripts/run_lstm.sh' to tr
 * '--lstm_num_layers' - The number of layers in the LSTM was set as 1.
 * '--lstm_dropout' - The dropout rate for the LSTM, which was irrelevant since the number of layers was 1.
 * '--lstm_lookback' - This is the number of episodes that the LSTM looks back when training. The LSTM only looks back to a maximum of 5 episodes.
+
+As stated above, the script as is can be run to reproduce the project. Once the LSTM is trained to 1,500 steps you can proceed to the next section.
+
+## Evaluating the LSTM against Adversarial Observations
+Next, we evaluate the LSTM against Adversarial Observations to see how it performs in comparison to the MLP based model trained on Data Augmentations. You can call 'scripts/run_tests_lstm.sh' to evaluate the LSTM model. Almost all of the parameters repeat from the section [Instructions to Run a Trained Model against Adversarial Observations](#instructions-to-run-a-trained-model-against-adversarial-observations).
