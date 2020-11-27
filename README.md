@@ -90,7 +90,7 @@ and go to `localhost:6006` in your browser. If you're running headlessly, try po
 ## Anjali Instructions (Add Title)
 
 ## Instructions to Run a Trained Model against Adversarial Observations
-This step assumes that you have a trained model, ready to run. It assumes that you've saved both the actor and critic. One can do this by running the training as instructed in the main [Instructions](#instructions) section at the top and setting the save_model flag and choosing the eval_freq. The models for the project were trained for 30,000 steps, saving every 5000 steps. We used seed 23 on the cartpole swingup task training the RadSac agent.
+This step assumes that you have a trained model, ready to run. It assumes that you've saved both the actor and critic. One can do this by running the training as instructed in the main [instructions](#instructions) section at the top and setting the save_model flag and choosing the eval_freq. The models for the project were trained for 30,000 steps, saving every 5000 steps. We used seed 23 on the cartpole swingup task training the RadSac agent.
 
 Once you have saved the model, you can open 'scripts/run_tests.sh'. The script calls the 'adversarial_obs.py' file. There are a number of flags that can be modified. You'll want to specify the following:
 
@@ -101,11 +101,12 @@ Once you have saved the model, you can open 'scripts/run_tests.sh'. The script c
 * '--load_step' - This variable is the only one sent in via an argument. It loads the model trained to the corresponding step. For the project, we tested on models traned to between 10,000 and 30,000 steps, with 5,000 step increments.
 * '--eval_steps' - This variable denotes the number of evaluation steps to run. An evaluation step consists of some number of episodes.
 * '--num_eval_episodes' - This variable tells us how many episodes should run per step.
+* '--train_data_augs' - This variable should be set to the data augmentation used when training.
 * '--attack_prob' - This variable denotes the adversarial attack probability. The observation is modified to an adversarial one at a rate approximately equivalent to this probability.
 * '--adversarial_iters' - This variable denotes the number of iterations that the adversarial gradient ascent on the observations runs for. The number used for the project was 10.
 * '--train_dir' - This variable should point to the top level model directory inside 'tmp'. This should be created during training.
 
-The above variables are already set per the original project parameters. They can be left alone and the script can be directly called to replicate the project. The only ones you may need to modify are 'train_dir' and 'work_dir'.
+The above variables are already set per the original project parameters. They can be left alone and the script can be directly called to replicate the project. The only ones you may need to modify are 'train_dir', 'work_dir', and 'train_data_augs'. The terminal output gives the evaluation results. The main directory corresponding to the test is saved in the 'test' directory, with some of the parameter settings above identifying it. Within this directory, images of observations and the correponding adversarial observations are stored in the 'image' subdirectory. A video of the episodes are saved in the 'video' subdirectory.
 
 ## Training the LSTM on the Cartpole Swingup Task
 First, we go over training the LSTM. You should call 'scripts/run_lstm.sh' to train the LSTM. This file calls 'train_lstm.py' with some parameters. Again, the script can be directly called as it is, to replicate the project. We walk through some of the parameters to give the reader familiarity.
@@ -125,4 +126,11 @@ First, we go over training the LSTM. You should call 'scripts/run_lstm.sh' to tr
 As stated above, the script as is can be run to reproduce the project. Once the LSTM is trained to 1,500 steps you can proceed to the next section.
 
 ## Evaluating the LSTM against Adversarial Observations
-Next, we evaluate the LSTM against Adversarial Observations to see how it performs in comparison to the MLP based model trained on Data Augmentations. You can call 'scripts/run_tests_lstm.sh' to evaluate the LSTM model. Almost all of the parameters repeat from the section [Instructions to Run a Trained Model against Adversarial Observations](#instructions-to-run-a-trained-model-against-adversarial-observations).
+Next, we evaluate the LSTM against Adversarial Observations to see how it performs in comparison to the MLP based model trained on Data Augmentations. You can call 'scripts/run_tests_lstm.sh' to evaluate the LSTM model. Almost all of the parameters are the same as in the section [Instructions to Run a Trained Model against Adversarial Observations](#instructions-to-run-a-trained-model-against-adversarial-observations). A few changes are given below:
+
+* '--num_eval_episodes' - This parameter should be changed to 5, to replicate the project.
+* '--seed' - We tested the LSTM using seed 59.
+* '--eval_steps' - We only evaluate the LSTM on 10 steps, instead of 15 as it was for the MLP models.
+* '--lstm_lookback' - We restrict the lookback of the LSTM when running tests to just 5 steps prior, instead of the entire episode history.
+
+Again, the script can be run as it is in the github repo to reproduce the project. Everything else is the same as in the previous section about Adversarial Observation tests.
