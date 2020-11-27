@@ -90,9 +90,10 @@ and go to `localhost:6006` in your browser. If you're running headlessly, try po
 ## Anjali Instructions (Add Title)
 
 ## Instructions to Run a Trained Model against Adversarial Observations
-This step assumes that you have a trained model, ready to run. It assumes that you've saved both the actor and critic. One can do this by running the training as instructed in the main instructions at the top and setting the save_model flag and choosing the eval_freq. The models for the project were trained for 30,000 steps, saving every 5000 steps. We used seed 23 on the cartpole swingup task training the RadSac agent.
+This step assumes that you have a trained model, ready to run. It assumes that you've saved both the actor and critic. One can do this by running the training as instructed in the main [Instructions](#instructions) section at the top and setting the save_model flag and choosing the eval_freq. The models for the project were trained for 30,000 steps, saving every 5000 steps. We used seed 23 on the cartpole swingup task training the RadSac agent.
 
 Once you have saved the model, you can open 'scripts/run_tests.sh'. The script calls the 'adversarial_obs.py' file. There are a number of flags that can be modified. You'll want to specify the following:
+
 * '--domain_name' - This variable sets the game that is played. It is currently set to 'cartpole', which is what the tests for the project were conducted on.
 * '--task_name' - This variable sets the task. Again, our project tests ran on 'swingup'.
 * '--work_dir' - It is specified as './test'. This can be changed, but you must create the folder that is specified here (including 'test').
