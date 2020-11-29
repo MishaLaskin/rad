@@ -96,25 +96,25 @@ After selecting the augmentation technique you like, simply run the file through
 
 ## Data Augmentation with GANs
 ### To train the GAN model:
-1. Run the script - run_gan.sh with the following flags being
+1. Run the script - 'scripts/run_gan.sh' with the following flags being
 * '--data_augs' as no_aug 
 * '--num_train_steps' as minimum as 10000 
 * 'save_buffer' as True
 2. This will create a bunch of observations which can be found under 'buffer' directory.
-3. You can now open 'scripts/run_gan.sh'. The script calls the 'train_gan.py' file which trains generator and critic models. There are a number of flags that can be set much some of them needs to be a specific value as mentioned below
+3. You can now open 'scripts/run_gan.sh'. The script calls the 'train_gan.py' file which trains generator and critic models. There are a number of flags that can be set and some of them needs to be specific value as mentioned below
 * '--domain_name' - This variable sets the game that is played. It is currently set to 'cartpole', which is what the tests for the project were conducted on.
 * '--task_name' - This variable sets the task. Again, our project tests ran on 'swingup'.
 * '--work_dir' - It is specified as './tmp'. This can be changed, but you must create the folder that is specified here (including 'tmp').
 * '--seed' - This is the seed that the projects were tested on is 23.
 * '--n_epochs' - This is the number of epochs to train on and was 400 for the project.
 * '--z_dim' - This is the dimension of the noise vector and is set to 64. If changed then corresponding generator and discriminator models must be changed.
-* '--display_step' - This if for visualization of the generated images
+* '--display_step' - This is for visualization of the generated images
 * '--batch_size' - This is the batch size, this was set to 4
 * '--lr' - This is learning rate set to 0.0002
-* '--beta_1' - This is a momentum tern set to 0.5
-* '--beta_2' - This is a momentum tern set to 0.999
+* '--beta_1' - This is a momentum term set to 0.5
+* '--beta_2' - This is a momentum term set to 0.999
 * '--c_lambda' - This is weight of regularization set to 10
-* '--crit_repeats' - This is the number of times to update thecritic per generator update and set to 5
+* '--crit_repeats' - This is the number of times to update the critic per generator update and set to 5
 * '--device' - set to cuda
 * '--display' - This is whether to display the generated images and loss vs step plot
 * '--buffer_for_gan' - This is the observation file that you want the GAN to train on which is of the form './tmp/cartpole-swingup-11-17-im84-b128-s23-pixel/buffer/80000_90000.pt'
