@@ -121,14 +121,14 @@ After selecting the augmentation technique you like, simply run the file through
 4. At the end you will have generator and critic/discriminator models stored in directories such as './tmp/cartpole-swingup-11-29-b4-s23/gan_gen' and './tmp/cartpole-swingup-11-29-b4-s23/gan_disc'.
 
 ### To  train the agent:
-1. Run the script - run.sh with the following flags as - 
+1. Run the script - 'scripts/run.sh' with the following flags as - 
 * '--encoder_type' as pixel 
 * '--pre_transform_image_size' as 100
-* '--image_size' as 100
-* '--frame_stack' as 1 
+* '--image_size' as 100 (GAN model is written for a size 100; if changed then GAN must be trained accordingly)
+* '--frame_stack' as 1 (it should be 1 only)
 * '--data_augs* as gan
 * '--model_gen_dir' as the name of the generator model that you would want to use such as './tmp/cartpole-swingup-11-29-b4-s23/gan_gen/gan_gen_3.pt'
-* '-z_dim' is defaluted to 64 but it should be same as what was used to train GAN above
+* '--z_dim' is defaulted to 64 but it should be same as what was used to train GAN above
 2. Other flag options can be used as is suitable.
 
 
