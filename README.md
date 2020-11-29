@@ -85,7 +85,12 @@ and go to `localhost:6006` in your browser. If you're running headlessly, try po
 
 # CS 7643 Fall 2020 Project Reproducibility Instructions
 
-## Shashwat Instructions (Add Title)
+## Testing  Generalization  and  Performancewith More Data Augmentations
+To run this, you should first be in the rad folder and then open the run.sh script present in the scripts folder. In that script '--data_augs' flag can be changed to the follwong 4 options to run the 4 newly implemented augmentation techniques:
+1. rgb_shift - Randomly shift rgb values for images
+2. channel_shuffle - Shuffle RGB values between channels
+3. median_blur - Apply 3x3 median filter to image
+4. rand_inv - Randomly select some subset of batch and invert colors 
 
 ## Anjali Instructions (Add Title)
 
