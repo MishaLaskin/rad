@@ -70,7 +70,7 @@ def preprocess_obs(obs, bits=5):
 class ReplayBuffer(Dataset):
     """Buffer to store environment transitions."""
     def __init__(self, obs_shape, action_shape, capacity, batch_size, device,image_size=84, 
-                 pre_image_size=84, transform=None):
+                 pre_image_size=84, transform=None, gan=None):
         self.capacity = capacity
         self.batch_size = batch_size
         self.device = device
@@ -89,7 +89,7 @@ class ReplayBuffer(Dataset):
         self.idx = 0
         self.last_save = 0
         self.full = False
-
+        self.gan = gan
 
     
 
@@ -174,7 +174,10 @@ class ReplayBuffer(Dataset):
                     og_obses = center_crop_images(obses, self.pre_image_size)
                     og_next_obses = center_crop_images(next_obses, self.pre_image_size)
                     obses, rndm_idxs = func(og_obses, self.image_size, return_random_idxs=True)
-                    next_obses = func(og_next_obses, self.image_size, **rndm_idxs)                     
+                    next_obses = func(og_next_obses, self.image_size, **rndm_idxs)    
+                elif 'gan' in aug:
+                    obses = func(torch.as_tensor(obses, device=self.device).float(), self.gan)
+                    next_obses = func(torch.as_tensor(next_obses, device=self.device).float(), self.gan)    
 
         obses = torch.as_tensor(obses, device=self.device).float()
         next_obses = torch.as_tensor(next_obses, device=self.device).float()
@@ -189,7 +192,7 @@ class ReplayBuffer(Dataset):
         if aug_funcs:
             for aug,func in aug_funcs.items():
                 # skip crop and cutout augs
-                if 'crop' in aug or 'cutout' in aug or 'translate' in aug:
+                if 'crop' in aug or 'cutout' in aug or 'translate' in aug or 'gan' in aug:
                     continue
                 obses = func(obses)
                 next_obses = func(next_obses)

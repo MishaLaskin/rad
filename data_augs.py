@@ -2,12 +2,42 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
-import random
-import random
-import random
 from TransformLayer import ColorJitterLayer
-from scipy import ndimage
+from torchvision.utils import make_grid
+import matplotlib.pyplot as plt
+import data as dataset
+from generation_builder import ExperimentBuilder
+import gan_generator
 
+def get_noise(n_samples, z_dim, device='cpu'):
+    '''
+    Function for creating noise vectors: Given the dimensions (n_samples, z_dim)
+    creates a tensor of that shape filled with random numbers from the normal distribution.
+    Parameters:
+      n_samples: the number of samples to generate, a scalar
+      z_dim: the dimension of the noise vector, a scalar
+      device: the device type
+    '''
+    return torch.randn(n_samples, z_dim, device=device)
+    
+
+def show_tensor_images(image_tensor, num_images=25, size=(1, 28, 28)):
+    '''
+    Function for visualizing images: Given a tensor of images, number of images, and
+    size per image, plots and prints the images in an uniform grid.
+    '''
+    image_tensor = (image_tensor + 1) / 2
+    image_unflat = image_tensor.detach().cpu()
+    image_grid = make_grid(image_unflat[:num_images], nrow=5)
+    plt.imshow(image_grid.permute(1, 2, 0).squeeze())
+    plt.show()
+
+def gan_data(imgs, gen, z_dim = 64):
+    device = imgs.device
+    fake_noise = get_noise(imgs.shape[0], z_dim, device=device)
+    fake = gen(fake_noise)
+    fake = (fake+1)/2
+    return fake
 
 def random_crop(imgs, out=84):
     """
@@ -192,6 +222,8 @@ def random_rotation(images,p=.3):
 
 # random color
 
+    
+
 def random_convolution(imgs):
     '''
     random covolution in "network randomization"
@@ -250,6 +282,10 @@ def random_translate(imgs, size, return_random_idxs=False, h1s=None, w1s=None):
     if return_random_idxs:  # So can do the same to another set of imgs.
         return outs, dict(h1s=h1s, w1s=w1s)
     return outs
+
+
+def no_aug(x):
+    return x
 
 # RGB shift
 def rgb_shift(imgs):
@@ -314,11 +350,6 @@ def img_invert(imgs):
     imgs_invert = imgs_invert.reshape(n,-1,h,w)
     return imgs_invert
 
-
-def no_aug(x):
-    return x
-
-
 if __name__ == '__main__':
     import time 
     from tabulate import tabulate
@@ -332,11 +363,15 @@ if __name__ == '__main__':
     x = np.load('data_sample.npy',allow_pickle=True)
     x = np.concatenate([x,x,x],1)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    x_numpy = x.copy()
+
     x = torch.from_numpy(x).to(device)
     x = x.float() / 255.
 
-    # crop
+    #mix-up
+    t = now()
+    mixup_data(x.cpu().numpy())
+    s1,tot1 = secs(t)
+        # crop
     t = now()
     random_crop(x.cpu().numpy(),64)
     s1,tot1 = secs(t)
@@ -399,4 +434,3 @@ if __name__ == '__main__':
                     ['Random Inversion', s12, tot12],
                     ],
                     headers=['Data Aug', 'Time / batch (secs)', 'Time / 100k steps (mins)']))
-
