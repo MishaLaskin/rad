@@ -281,6 +281,7 @@ class RadSacAgent(object):
         self.augs_funcs = {}
 
         aug_to_func = {
+                'gan':rad.gan_data,
                 'crop':rad.random_crop,
                 'grayscale':rad.random_grayscale,
                 'cutout':rad.random_cutout,
@@ -290,10 +291,6 @@ class RadSacAgent(object):
                 'rand_conv':rad.random_convolution,
                 'color_jitter':rad.random_color_jitter,
                 'translate':rad.random_translate,
-                'rgb_shift':rad.rgb_shift,
-                'channel_shuffle':rad.rgb_shuffle,
-                'median_blur':rad.median_blur,
-                'rand_inv':rad.img_invert,
                 'no_aug':rad.no_aug,
             }
 
@@ -411,16 +408,6 @@ class RadSacAgent(object):
         self.critic_optimizer.step()
 
         self.critic.log(L, step)
-
-    def actor_obs_grad(self, obs):
-        _, pi, log_pi, log_std = self.actor(obs)
-        actor_Q1, actor_Q2 = self.critic(obs, pi)
-
-        actor_Q = torch.min(actor_Q1, actor_Q2)
-        actor_loss = (self.alpha * log_pi - actor_Q).mean()
-        actor_loss.backward()
-
-        return obs.grad
 
     def update_actor_and_alpha(self, obs, L, step):
         # detach encoder, so we don't update it with the actor loss

@@ -11,6 +11,7 @@ def tie_weights(src, trg):
 OUT_DIM = {2: 39, 4: 35, 6: 31}
 OUT_DIM_64 = {2: 29, 4: 25, 6: 21}
 OUT_DIM_108 = {4: 47}
+OUT_DIM_100 = {4: 43}
 
  
 class PixelEncoder(nn.Module):
@@ -34,6 +35,8 @@ class PixelEncoder(nn.Module):
             out_dim = OUT_DIM_108[num_layers]
         elif obs_shape[-1] == 64:
             out_dim = OUT_DIM_64[num_layers]
+        elif obs_shape[-1] == 100:
+            out_dim = OUT_DIM_100[num_layers]
         else:
             out_dim = OUT_DIM[num_layers]
 

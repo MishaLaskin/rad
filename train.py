@@ -18,7 +18,7 @@ from video import VideoRecorder
 from curl_sac import RadSacAgent
 from torchvision import transforms
 import data_augs as rad
-
+from gan_generator import Generator
 def parse_args():
     parser = argparse.ArgumentParser()
     # environment
@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument('--task_name', default='swingup')
     parser.add_argument('--pre_transform_image_size', default=100, type=int)
 
-    parser.add_argument('--image_size', default=84, type=int)
+    parser.add_argument('--image_size', default=100, type=int)
     parser.add_argument('--action_repeat', default=1, type=int)
     parser.add_argument('--frame_stack', default=3, type=int)
     # replay buffer
@@ -68,13 +68,16 @@ def parse_args():
     parser.add_argument('--seed', default=1, type=int)
     parser.add_argument('--work_dir', default='.', type=str)
     parser.add_argument('--save_tb', default=False, action='store_true')
-    parser.add_argument('--save_buffer', default=False, action='store_true')
+    parser.add_argument('--save_buffer', default=True, action='store_true')
     parser.add_argument('--save_video', default=True, action='store_true')
     parser.add_argument('--save_model', default=True, action='store_true')
     parser.add_argument('--detach_encoder', default=False, action='store_true')
     # data augs
     parser.add_argument('--data_augs', default='crop', type=str)
 
+    #if using gan as data aug
+    parser.add_argument('--z_dim', default=64, type=int)
+    parser.add_argument('--model_gen_dir', default='.', type=str)
 
     parser.add_argument('--log_interval', default=100, type=int)
     args = parser.parse_args()
@@ -186,7 +189,7 @@ def main():
         args.__dict__["seed"] = np.random.randint(1,1000000)
     utils.set_seed_everywhere(args.seed)
 
-    pre_transform_image_size = args.pre_transform_image_size if 'crop' in args.data_augs else args.image_size
+    pre_transform_image_size = args.pre_transform_image_size if 'crop' or 'pool' in args.data_augs else args.image_size
     pre_image_size = args.pre_transform_image_size # record the pre transform image size for translation
 
     env = dmc2gym.make(
@@ -235,15 +238,31 @@ def main():
         obs_shape = env.observation_space.shape
         pre_aug_obs_shape = obs_shape
 
-    replay_buffer = utils.ReplayBuffer(
-        obs_shape=pre_aug_obs_shape,
-        action_shape=action_shape,
-        capacity=args.replay_buffer_capacity,
-        batch_size=args.batch_size,
-        device=device,
-        image_size=args.image_size,
-        pre_image_size=pre_image_size,
-    )
+
+    if args.data_augs == 'gan':
+        gen = Generator(args.z_dim).to(device)
+        gen.load_state_dict(torch.load(args.model_gen_dir))
+        gen.eval()
+        replay_buffer = utils.ReplayBuffer(
+            obs_shape=pre_aug_obs_shape,
+            action_shape=action_shape,
+            capacity=args.replay_buffer_capacity,
+            batch_size=args.batch_size,
+            device=device,
+            image_size=args.image_size,
+            pre_image_size=pre_image_size,
+            gan=gen,
+        )
+    else:
+        replay_buffer = utils.ReplayBuffer(
+            obs_shape=pre_aug_obs_shape,
+            action_shape=action_shape,
+            capacity=args.replay_buffer_capacity,
+            batch_size=args.batch_size,
+            device=device,
+            image_size=args.image_size,
+            pre_image_size=pre_image_size,
+        )
 
     agent = make_agent(
         obs_shape=obs_shape,

@@ -1,0 +1,17 @@
+CUDA_VISIBLE_DEVICES=0 python /home/anjali/rad/train_gan.py \
+    --domain_name cartpole \
+    --task_name swingup \
+    --work_dir ./tmp \
+    --seed 23 \
+    --model_gen_dir gan_gen \
+    --model_disc_dir gan_disc \
+    --n_epochs 400 \
+    --z_dim 64 \
+    --display_step 1000 \
+    --batch_size 4 \
+    --lr 0.0002 \
+    --beta_1 0.5 \
+    --beta_2 0.999 \
+    --c_lambda 10 \
+    --crit_repeats 5 \
+    --buffer_for_gan ./tmp/cartpole-swingup-11-17-im84-b128-s23-pixel/buffer/80000_90000.pt
