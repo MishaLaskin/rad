@@ -92,6 +92,8 @@ To run this, you should first be in the rad folder and then open the run.sh scri
 3. median_blur - Apply 3x3 median filter to image
 4. rand_inv - Randomly select some subset of batch and invert colors 
 
+After selecting the augmentation technique you like, simply run the file through terminal.
+
 ## Anjali Instructions (Add Title)
 
 ## Instructions to Run a Trained Model against Adversarial Observations
