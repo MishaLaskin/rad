@@ -2,16 +2,17 @@
 
 Official codebase for [Reinforcement Learning with Augmented Data](https://mishalaskin.github.io/rad). This codebase was originally forked from [CURL](https://mishalaskin.github.io/curl). 
 
-Additionally, here is the [codebase link for ProcGen experiments](https://github.com/pokaxpoka/rad_procgen).
+Additionally, here is the [codebase link for ProcGen experiments](https://github.com/pokaxpoka/rad_procgen) and [codebase link for OpenAI Gym experiments](https://github.com/pokaxpoka/rad_openaigym).
 
 
 ## BibTex
 
 ```
-@unpublished{laskin_lee2020rad,
-  title={Reinforcement Learning with Augmented Data},
+@article{laskin2020reinforcement,
+  title={Reinforcement learning with augmented data},
   author={Laskin, Michael and Lee, Kimin and Stooke, Adam and Pinto, Lerrel and Abbeel, Pieter and Srinivas, Aravind},
-  note={arXiv:2004.14990}
+  journal={arXiv preprint arXiv:2004.14990},
+  year={2020}
 }
 ```
 
